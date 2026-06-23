@@ -22,6 +22,13 @@ permissions:
 env:
   CARGO_TERM_COLOR: always
   RUST_BACKTRACE: 1
+  # Limit the decode benchmark to a representative corpus so the run stays within
+  # a reasonable CI duration. Keep aligned with the image set used by the
+  # existing performance benchmark job in pull_request.yml. Paths must be
+  # absolute because `cargo codspeed run` executes the benchmark binary from a
+  # working directory other than the repository root.
+  JXL_FILES: >-
+    ${{ github.workspace }}/jxl/resources/test/conformance_test_images/sunset_logo.jxl,${{ github.workspace }}/jxl/resources/test/conformance_test_images/bike.jxl,${{ github.workspace }}/jxl/resources/test/green_queen_modular_e3.jxl,${{ github.workspace }}/jxl/resources/test/green_queen_vardct_e3.jxl,${{ github.workspace }}/jxl/resources/test/conformance_test_images/bicycles.jxl,${{ github.workspace }}/jxl/resources/test/conformance_test_images/delta_palette.jxl,${{ github.workspace }}/jxl/resources/test/conformance_test_images/lz77_flower.jxl,${{ github.workspace }}/jxl/resources/test/conformance_test_images/patches.jxl
 
 jobs:
   benchmarks:
