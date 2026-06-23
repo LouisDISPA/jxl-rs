@@ -20,7 +20,7 @@ color-eyre = "0.6.5"
 
 [dev-dependencies]
 jxl_macros = { path = "../jxl_macros", features = ["test"], version = "=0.4.3" }
-criterion = { version = "0.7.0", features = ["html_reports"] }
+criterion = { version = "4.7.0", features = ["html_reports"], package = "codspeed-criterion-compat" }
 
 [build-dependencies]
 anyhow = "1.0.100"

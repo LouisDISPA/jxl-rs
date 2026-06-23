@@ -1,5 +1,7 @@
 # JPEG XL in Rust
 
+[![CodSpeed](https://img.shields.io/endpoint?url=https://codspeed.io/badge.json)](https://app.codspeed.io/LouisDISPA/jxl-rs?utm_source=badge)
+
 This is a work-in-progress reimplementation of a JPEG XL decoder in Rust, aiming to be conforming, safe, and fast.
 
 We strive to decode all conformant JPEG XL bitstreams correctly. If you find an image that can be decoded with the reference 
