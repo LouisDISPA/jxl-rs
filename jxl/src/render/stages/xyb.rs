@@ -25,7 +25,7 @@ pub struct OutputColorInfo {
     pub tf: from_linear::TransferFunction,
 }
 
-#[cfg(test)]
+#[cfg(any(test, feature = "benchmark"))]
 impl Default for OutputColorInfo {
     fn default() -> Self {
         use crate::headers::encodings::Empty;

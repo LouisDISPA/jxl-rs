@@ -92,6 +92,19 @@ impl ExtraChannelInfo {
     pub fn bit_depth(&self) -> BitDepth {
         self.bit_depth
     }
+    #[cfg(feature = "benchmark")]
+    pub(crate) fn benchmark_non_associated_alpha() -> Self {
+        Self {
+            all_default: true,
+            ec_type: ExtraChannel::Alpha,
+            bit_depth: BitDepth::default(&Empty {}),
+            dim_shift: 0,
+            name: String::new(),
+            alpha_associated: false,
+            spot_color: None,
+            cfa_channel: None,
+        }
+    }
     fn check(&self, _: &Empty) -> Result<(), Error> {
         if self.dim_shift > 3 {
             Err(Error::DimShiftTooLarge(self.dim_shift))

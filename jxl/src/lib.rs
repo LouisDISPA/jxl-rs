@@ -5,6 +5,9 @@
 
 #![deny(unsafe_code)]
 pub mod api;
+#[cfg(feature = "benchmark")]
+#[doc(hidden)]
+pub mod benchmarks;
 pub mod bit_reader;
 pub mod color;
 pub mod container;
