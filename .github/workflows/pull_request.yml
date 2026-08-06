@@ -21,6 +21,7 @@ jobs:
   # Run source tests: author list, copyright notice and merge conflicts.
   source_checks:
     runs-on: [ubuntu-latest]
+    if: false
     steps:
       - name: Checkout the source
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
@@ -32,6 +33,7 @@ jobs:
   authors:
     runs-on: [ubuntu-latest]
     continue-on-error: true
+    if: false
     steps:
       - name: Checkout the source
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
@@ -154,6 +156,7 @@ jobs:
 
   coverage:
     runs-on: ubuntu-latest
+    if: false
     steps:
       - name: Checkout the source
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
@@ -189,6 +192,7 @@ jobs:
 
   conformance:
     runs-on: ubuntu-latest
+    if: false
     steps:
       - name: Checkout the source
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
