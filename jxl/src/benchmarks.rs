@@ -11,6 +11,7 @@ use crate::{
     features::{
         blending::perform_blending,
         epf::SigmaSource,
+        noise::Noise,
         patches::{PatchBlendMode, PatchBlending},
         spline::{Point, QuantizedSpline, Splines},
     },
@@ -19,13 +20,14 @@ use crate::{
     image::Image,
     render::{
         Channels, ChannelsMut, RenderPipelineInOutStage, RenderPipelineInPlaceStage,
-        stages::{Epf1Stage, OutputColorInfo, XybStage},
+        stages::{AddNoiseStage, ConvolveNoiseStage, Epf1Stage, OutputColorInfo, XybStage},
     },
     util::{AtomicRefCell, SmallVec, StackOnly},
 };
 
 pub const XYB_WIDTH: usize = 4096;
 pub const EPF_WIDTH: usize = 1024;
+pub const NOISE_WIDTH: usize = 4096;
 pub const SPLINE_WIDTH: usize = 320;
 pub const SPLINE_HEIGHT: usize = 320;
 pub const BLEND_WIDTH: usize = 4096;
@@ -159,6 +161,154 @@ impl Epf1Benchmark {
                 .zip(&self.input_rows[channel * 5 + 2][2..EPF_WIDTH + 2])
                 .any(|(filtered, center)| (filtered - center).abs() > 1e-7)
         }));
+    }
+}
+
+pub struct ConvolveNoiseBenchmark {
+    stage: ConvolveNoiseStage,
+    input_rows: [Vec<f32>; 5],
+}
+
+pub struct ConvolveNoiseOutput(Vec<f32>);
+
+impl Default for ConvolveNoiseBenchmark {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl ConvolveNoiseBenchmark {
+    pub fn new() -> Self {
+        let input_rows = core::array::from_fn(|row| {
+            (0..NOISE_WIDTH + 4)
+                .map(|x| ((x * (row + 3) + row * 29) % 2048) as f32 / 1024.0)
+                .collect()
+        });
+        Self {
+            stage: ConvolveNoiseStage::new(0),
+            input_rows,
+        }
+    }
+
+    pub fn output(&self) -> ConvolveNoiseOutput {
+        ConvolveNoiseOutput(vec![0.0; NOISE_WIDTH])
+    }
+
+    pub fn run(&self, output: &mut ConvolveNoiseOutput) -> f32 {
+        let input_refs: SmallVec<&[f32], 32, StackOnly> =
+            self.input_rows.iter().map(Vec::as_slice).collect();
+        let input = Channels::new(input_refs, 1, 5);
+
+        {
+            let output_refs: SmallVec<&mut [f32], 8, StackOnly> =
+                std::iter::once(output.0.as_mut_slice()).collect();
+            let mut output_channels = ChannelsMut::new(output_refs, 1, 1);
+            self.stage
+                .process_row_chunk((0, 0), NOISE_WIDTH, &input, &mut output_channels, None);
+        }
+
+        output.0[0] + output.0[NOISE_WIDTH / 2] + output.0[NOISE_WIDTH - 1]
+    }
+
+    pub fn smoke(&self) {
+        let mut output = self.output();
+        let checksum = self.run(&mut output);
+        assert!(checksum.is_finite());
+        assert!(output.0.iter().all(|value| value.is_finite()));
+        assert!(
+            output
+                .0
+                .iter()
+                .zip(&self.input_rows[2][2..NOISE_WIDTH + 2])
+                .any(|(filtered, center)| (filtered - center).abs() > 1e-7)
+        );
+    }
+}
+
+pub struct AddNoiseBenchmark {
+    stage: AddNoiseStage,
+    template: [Vec<f32>; 6],
+}
+
+pub struct AddNoiseInput([Vec<f32>; 6]);
+
+impl Default for AddNoiseBenchmark {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl AddNoiseBenchmark {
+    pub fn new() -> Self {
+        let template = core::array::from_fn(|channel| {
+            (0..NOISE_WIDTH)
+                .map(|x| {
+                    let position = x as f32 / (NOISE_WIDTH - 1) as f32;
+                    match channel {
+                        0 => (position - 0.5) * 0.2,
+                        1 => 0.1 + position,
+                        2 => 0.8 - position * 0.6,
+                        _ => {
+                            let value = (x * (channel * 13 + 17) + channel * 101) % 2048;
+                            (value as f32 / 2047.0 - 0.5) * 2.0
+                        }
+                    }
+                })
+                .collect()
+        });
+        let color_correlation = ColorCorrelationParams {
+            base_correlation_x: 0.15,
+            base_correlation_b: 0.85,
+            ytox_lf: 11,
+            ytob_lf: -9,
+            ..ColorCorrelationParams::default()
+        };
+        Self {
+            stage: AddNoiseStage::new(
+                Arc::new(AtomicRefCell::new(Noise {
+                    lut: [0.05, 0.13, 0.24, 0.38, 0.51, 0.65, 0.78, 0.9],
+                })),
+                Arc::new(AtomicRefCell::new(color_correlation)),
+                3,
+            ),
+            template,
+        }
+    }
+
+    pub fn input(&self) -> AddNoiseInput {
+        AddNoiseInput(self.template.clone())
+    }
+
+    pub fn run(&self, input: &mut AddNoiseInput) -> f32 {
+        let [x, y, b, noise_r, noise_g, noise_c] = &mut input.0;
+        let mut rows = [
+            x.as_mut_slice(),
+            y.as_mut_slice(),
+            b.as_mut_slice(),
+            noise_r.as_mut_slice(),
+            noise_g.as_mut_slice(),
+            noise_c.as_mut_slice(),
+        ];
+        self.stage
+            .process_row_chunk((0, 0), NOISE_WIDTH, &mut rows, None);
+        rows[0][0] + rows[1][NOISE_WIDTH / 2] + rows[2][NOISE_WIDTH - 1]
+    }
+
+    pub fn smoke(&self) {
+        let mut input = self.input();
+        let original = input.0.clone();
+        let checksum = self.run(&mut input);
+        assert!(checksum.is_finite());
+        assert!(input.0.iter().flatten().all(|value| value.is_finite()));
+        for (before, after) in original[..3].iter().zip(&input.0[..3]) {
+            assert!(
+                before
+                    .iter()
+                    .zip(after)
+                    .any(|(before, after)| (before - after).abs() > 1e-7)
+            );
+        }
+        assert_eq!(&original[3..], &input.0[3..]);
     }
 }
 

@@ -4,7 +4,10 @@
 // license that can be found in the LICENSE file.
 
 use divan::Bencher;
-use jxl::benchmarks::{BlendBenchmark, Epf1Benchmark, SplineBenchmark, XybBenchmark};
+use jxl::benchmarks::{
+    AddNoiseBenchmark, BlendBenchmark, ConvolveNoiseBenchmark, Epf1Benchmark, SplineBenchmark,
+    XybBenchmark,
+};
 
 fn main() {
     divan::main();
@@ -32,6 +35,28 @@ mod render {
             bencher
                 .with_inputs(|| benchmark.output())
                 .bench_local_values(|mut output| benchmark.run(&mut output));
+        }
+    }
+
+    pub mod noise {
+        use super::*;
+
+        #[divan::bench]
+        fn convolve_noise_active_4096px(bencher: Bencher) {
+            let benchmark = ConvolveNoiseBenchmark::new();
+            benchmark.smoke();
+            bencher
+                .with_inputs(|| benchmark.output())
+                .bench_local_values(|mut output| benchmark.run(&mut output));
+        }
+
+        #[divan::bench]
+        fn add_noise_active_4096px(bencher: Bencher) {
+            let benchmark = AddNoiseBenchmark::new();
+            benchmark.smoke();
+            bencher
+                .with_inputs(|| benchmark.input())
+                .bench_local_values(|mut input| benchmark.run(&mut input));
         }
     }
 }
