@@ -11,13 +11,13 @@ fn main() {
     divan::main();
 }
 
-fn decode_u8(mut input: &[u8]) -> DecodeOutput {
+fn decode_f32(mut input: &[u8]) -> DecodeOutput {
     decode_frames(
         &mut input,
         JxlDecoderOptions::default(),
         None,
-        Some(OutputDataType::U8),
-        &[OutputDataType::U8],
+        Some(OutputDataType::F32),
+        &[OutputDataType::F32],
         true,
         false,
         None,
@@ -60,9 +60,9 @@ fn bench_decode(
 ) {
     // Keep the oracle outside the measured closure. It protects fixture identity,
     // output selection, dimensions, and animation traversal.
-    let smoke = decode_u8(input);
+    let smoke = decode_f32(input);
     assert_eq!(smoke.size, expected_size);
-    assert_eq!(smoke.data_type, OutputDataType::U8);
+    assert_eq!(smoke.data_type, OutputDataType::F32);
     if let Some(expected_frames) = expected_frames {
         assert_eq!(smoke.frames.len(), expected_frames);
     } else {
@@ -70,7 +70,7 @@ fn bench_decode(
     }
     assert_ne!(sampled_checksum(&smoke), 0);
 
-    bencher.with_inputs(|| input).bench_local_values(decode_u8);
+    bencher.with_inputs(|| input).bench_local_values(decode_f32);
 }
 
 mod decode {
@@ -83,7 +83,7 @@ mod decode {
             include_bytes!("../../jxl/resources/test/green_queen_modular_e3.jxl");
 
         #[divan::bench]
-        fn green_queen_u8(bencher: Bencher) {
+        fn green_queen_f32(bencher: Bencher) {
             bench_decode(bencher, GREEN_QUEEN, (438, 589), Some(1));
         }
     }
@@ -95,15 +95,35 @@ mod decode {
             include_bytes!("../../jxl/resources/test/green_queen_vardct_e3.jxl");
         const BIKE: &[u8] =
             include_bytes!("../../jxl/resources/test/conformance_test_images/bike.jxl");
+        const NOISE_CONFORMANCE: &[u8] =
+            include_bytes!("../../jxl/resources/test/conformance_test_images/noise.jxl");
+        const NOISE_MULTIPLE_LAYERS_SPLINE: &[u8] =
+            include_bytes!("../../jxl/resources/test/multiple_layers_noise_spline.jxl");
+        const NOISE_MINIMAL: &[u8] = include_bytes!("../../jxl/resources/test/8x8_noise.jxl");
 
         #[divan::bench]
-        fn green_queen_u8(bencher: Bencher) {
+        fn green_queen_f32(bencher: Bencher) {
             bench_decode(bencher, GREEN_QUEEN, (438, 589), Some(1));
         }
 
         #[divan::bench]
-        fn bike_u8(bencher: Bencher) {
+        fn bike_f32(bencher: Bencher) {
             bench_decode(bencher, BIKE, (2048, 2560), Some(1));
+        }
+
+        #[divan::bench]
+        fn noise_conformance_f32(bencher: Bencher) {
+            bench_decode(bencher, NOISE_CONFORMANCE, (500, 606), Some(1));
+        }
+
+        #[divan::bench]
+        fn noise_multiple_layers_spline_f32(bencher: Bencher) {
+            bench_decode(bencher, NOISE_MULTIPLE_LAYERS_SPLINE, (2048, 1152), Some(1));
+        }
+
+        #[divan::bench]
+        fn noise_minimal_8x8_f32(bencher: Bencher) {
+            bench_decode(bencher, NOISE_MINIMAL, (8, 8), Some(1));
         }
     }
 
@@ -115,7 +135,7 @@ mod decode {
         );
 
         #[divan::bench]
-        fn newtons_cradle_u8(bencher: Bencher) {
+        fn newtons_cradle_f32(bencher: Bencher) {
             bench_decode(bencher, NEWTONS_CRADLE, (480, 360), Some(36));
         }
     }

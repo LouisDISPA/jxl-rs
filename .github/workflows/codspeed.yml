@@ -37,14 +37,12 @@ jobs:
               -p jxl_cli -p jxl -p jxl_transforms --bench codspeed
               --features jxl/benchmark,jxl_transforms/all-simd
             run_args: --bench codspeed
-            filter: green_queen|bike_u8|newtons_cradle_u8|dct_|xyb_|epf1_|noise_|default_320x320|above_4096px
             exclude_allocations: true
           - name: Memory
             mode: memory
             runner: ubuntu-latest
             build_args: -p jxl_cli --bench codspeed
             run_args: -p jxl_cli --bench codspeed
-            filter: green_queen|bike_u8|newtons_cradle_u8
             exclude_allocations: false
     steps:
       - name: Checkout the source
