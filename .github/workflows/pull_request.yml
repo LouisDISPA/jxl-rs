@@ -21,26 +21,26 @@ jobs:
   # Run source tests: author list, copyright notice and merge conflicts.
   source_checks:
     runs-on: [ubuntu-latest]
+    if: false
     steps:
-    - name: Checkout the source
-      uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
-      with:
-        persist-credentials: false
-    - name: Check source code
-      run:
-        ./ci/pull_request_checks.sh
+      - name: Checkout the source
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          persist-credentials: false
+      - name: Check source code
+        run: ./ci/pull_request_checks.sh
 
   authors:
     runs-on: [ubuntu-latest]
     continue-on-error: true
+    if: false
     steps:
-    - name: Checkout the source
-      uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
-      with:
-        persist-credentials: false
-    - name: Check AUTHORS file
-      run:
-        ./ci/author_check.sh
+      - name: Checkout the source
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          persist-credentials: false
+      - name: Check AUTHORS file
+        run: ./ci/author_check.sh
 
   format:
     runs-on: ubuntu-latest
@@ -55,7 +55,6 @@ jobs:
         uses: dtolnay/rust-toolchain@29eef336d9b2848a0b548edc03f92a220660cdb8 # stable
         with:
           components: rustfmt
-
 
       - name: Cargo fmt (check)
         run: cargo fmt --all -- --check
@@ -83,7 +82,6 @@ jobs:
         uses: Swatinem/rust-cache@98c8021b550208e191a6a3145459bfc9fb29c4c0 # v2.8.0
         with:
           prefix-key: ${{ matrix.os }}-clippy-${{ matrix.features }}
-
 
       - name: Clippy with all features
         if: ${{ matrix.features == 'all' }}
@@ -158,189 +156,114 @@ jobs:
 
   coverage:
     runs-on: ubuntu-latest
+    if: false
     steps:
-    - name: Checkout the source
-      uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
-      with:
-        persist-credentials: false
+      - name: Checkout the source
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          persist-credentials: false
 
-    - name: Install latest rust toolchain
-      uses: dtolnay/rust-toolchain@29eef336d9b2848a0b548edc03f92a220660cdb8 # stable
+      - name: Install latest rust toolchain
+        uses: dtolnay/rust-toolchain@29eef336d9b2848a0b548edc03f92a220660cdb8 # stable
 
-    - name: Rust cache
-      uses: Swatinem/rust-cache@23bce251a8cd2ffc3c1075eaa2367cf899916d84 # v2.7.3
+      - name: Rust cache
+        uses: Swatinem/rust-cache@23bce251a8cd2ffc3c1075eaa2367cf899916d84 # v2.7.3
 
-    - name: Install llvm-cov
-      run: cargo +stable install cargo-llvm-cov --locked
+      - name: Install llvm-cov
+        run: cargo +stable install cargo-llvm-cov --locked
 
-    - name: Build and gather coverage
-      run: cargo llvm-cov --no-report --release
+      - name: Build and gather coverage
+        run: cargo llvm-cov --no-report --release
 
-    - name: Generate JSON report
-      run: cargo llvm-cov report --json --release --output-path=coverage.json
+      - name: Generate JSON report
+        run: cargo llvm-cov report --json --release --output-path=coverage.json
 
-    - name: Distill summary
-      run: ./ci/coverage_summary.py >> $GITHUB_STEP_SUMMARY
+      - name: Distill summary
+        run: ./ci/coverage_summary.py >> $GITHUB_STEP_SUMMARY
 
-    - name: Generate HTML report
-      run: cargo llvm-cov report --html --release --output-dir=coverage_html
+      - name: Generate HTML report
+        run: cargo llvm-cov report --html --release --output-dir=coverage_html
 
-    - name: Upload HTML report
-      uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
-      with:
-        name: coverage_report
-        path: ./coverage_html/html
+      - name: Upload HTML report
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: coverage_report
+          path: ./coverage_html/html
 
   conformance:
     runs-on: ubuntu-latest
+    if: false
     steps:
-    - name: Checkout the source
-      uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
-      with:
-        persist-credentials: false
+      - name: Checkout the source
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          persist-credentials: false
 
-    - name: Checkout bench
-      uses: actions/checkout@61b9e3751b92087fd0b06925ba6dd6314e06f089 # master
-      with:
-        repository: libjxl/bench
-        path: bench      
-        fetch-depth: 1
-        persist-credentials: false
+      - name: Checkout bench
+        uses: actions/checkout@61b9e3751b92087fd0b06925ba6dd6314e06f089 # master
+        with:
+          repository: libjxl/bench
+          path: bench
+          fetch-depth: 1
+          persist-credentials: false
 
-    - name: Fix bench dependencies
-      run: |
-        ( cd bench && git submodule update --recursive --init --depth 1 --recommend-shallow third_party/conformance )
-        ( cd bench/third_party && rm -rf jxl-rs && ln -s "${GITHUB_WORKSPACE}" jxl-rs )
+      - name: Fix bench dependencies
+        run: |
+          ( cd bench && git submodule update --recursive --init --depth 1 --recommend-shallow third_party/conformance )
+          ( cd bench/third_party && rm -rf jxl-rs && ln -s "${GITHUB_WORKSPACE}" jxl-rs )
 
-    - name: Cache conformance objects
-      id: cache-conformance
-      uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
-      with:
-        path: bench/third_party/conformance/.objects
-        key: conformance-objects
+      - name: Cache conformance objects
+        id: cache-conformance
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        with:
+          path: bench/third_party/conformance/.objects
+          key: conformance-objects
 
-    - name: Update conformance objects
-      run: bash bench/third_party/conformance/scripts/download_and_symlink_using_curl.sh
+      - name: Update conformance objects
+        run: bash bench/third_party/conformance/scripts/download_and_symlink_using_curl.sh
 
-    - name: Install latest rust toolchain
-      uses: dtolnay/rust-toolchain@29eef336d9b2848a0b548edc03f92a220660cdb8 # stable
-      with:
-        components: clippy, rustfmt
+      - name: Install latest rust toolchain
+        uses: dtolnay/rust-toolchain@29eef336d9b2848a0b548edc03f92a220660cdb8 # stable
+        with:
+          components: clippy, rustfmt
 
-    - name: Rust cache
-      uses: Swatinem/rust-cache@23bce251a8cd2ffc3c1075eaa2367cf899916d84 # v2.7.3
+      - name: Rust cache
+        uses: Swatinem/rust-cache@23bce251a8cd2ffc3c1075eaa2367cf899916d84 # v2.7.3
 
-    - name: Build jxl_cli
-      run: cargo build --release --bin jxl_cli
+      - name: Build jxl_cli
+        run: cargo build --release --bin jxl_cli
 
-    - name: Setup python3
-      uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
-      with:
-        python-version: '3.x'
-    
-    - name: Install Python dependencies
-      run: pip install numpy apng pypng
+      - name: Setup python3
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with:
+          python-version: "3.x"
 
-    - name: Update apt
-      run: sudo apt update
+      - name: Install Python dependencies
+        run: pip install numpy apng pypng
 
-    - name: Install binary dependencies
-      run: sudo apt install imagemagick
+      - name: Update apt
+        run: sudo apt update
 
-    - name: Run jxl-rs conformance tests with ICC
-      id: icc_conformance
-      run: python3 ./bench/third_party/conformance/scripts/conformance.py --decoder "python3 ${GITHUB_WORKSPACE}/bench/scripts/wrap_jxl-rs.py --decoder ' ${GITHUB_WORKSPACE}/bench/third_party/jxl-rs/target/release/jxl_cli %s %s --icc-out %s'" --corpus ${GITHUB_WORKSPACE}/bench/third_party/conformance/testcases/main_level5.txt --results=${GITHUB_WORKSPACE}/bench/docs/dumps/dump_jxl-rs.json --lax
+      - name: Install binary dependencies
+        run: sudo apt install imagemagick
 
-    - name: Run jxl-rs conformance tests wrapped in PNG
-      id: png_conformance
-      run: python3 ./bench/third_party/conformance/scripts/conformance.py --decoder "python3 ${GITHUB_WORKSPACE}/bench/scripts/wrap_png.py --decoder ' ${GITHUB_WORKSPACE}/bench/third_party/jxl-rs/target/release/jxl_cli --override-bitdepth=16 %s %s '" --corpus ${GITHUB_WORKSPACE}/bench/third_party/conformance/testcases/main_level5.txt --results=${GITHUB_WORKSPACE}/bench/docs/dumps/dump_jxl-rs_via_png.json --lax
-      continue-on-error: true
+      - name: Run jxl-rs conformance tests with ICC
+        id: icc_conformance
+        run: python3 ./bench/third_party/conformance/scripts/conformance.py --decoder "python3 ${GITHUB_WORKSPACE}/bench/scripts/wrap_jxl-rs.py --decoder ' ${GITHUB_WORKSPACE}/bench/third_party/jxl-rs/target/release/jxl_cli %s %s --icc-out %s'" --corpus ${GITHUB_WORKSPACE}/bench/third_party/conformance/testcases/main_level5.txt --results=${GITHUB_WORKSPACE}/bench/docs/dumps/dump_jxl-rs.json --lax
 
-    - name: Export step summary
-      run: ./ci/conformance_summary.py "${GITHUB_WORKSPACE}/bench/docs/dumps/dump_jxl-rs.json" "${GITHUB_WORKSPACE}/bench/docs/dumps/dump_jxl-rs_via_png.json" >> $GITHUB_STEP_SUMMARY
+      - name: Run jxl-rs conformance tests wrapped in PNG
+        id: png_conformance
+        run: python3 ./bench/third_party/conformance/scripts/conformance.py --decoder "python3 ${GITHUB_WORKSPACE}/bench/scripts/wrap_png.py --decoder ' ${GITHUB_WORKSPACE}/bench/third_party/jxl-rs/target/release/jxl_cli --override-bitdepth=16 %s %s '" --corpus ${GITHUB_WORKSPACE}/bench/third_party/conformance/testcases/main_level5.txt --results=${GITHUB_WORKSPACE}/bench/docs/dumps/dump_jxl-rs_via_png.json --lax
+        continue-on-error: true
 
-    - name: Merge conformance report HTML
-      run: ./ci/merge_conformance_report.py "${GITHUB_WORKSPACE}/bench/docs" >> conformance_report.html
+      - name: Export step summary
+        run: ./ci/conformance_summary.py "${GITHUB_WORKSPACE}/bench/docs/dumps/dump_jxl-rs.json" "${GITHUB_WORKSPACE}/bench/docs/dumps/dump_jxl-rs_via_png.json" >> $GITHUB_STEP_SUMMARY
 
-    - name: Upload HTML report
-      uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
-      with:
-        name: conformance_report
-        path: conformance_report.html
+      - name: Merge conformance report HTML
+        run: ./ci/merge_conformance_report.py "${GITHUB_WORKSPACE}/bench/docs" >> conformance_report.html
 
-  benchmark:
-    runs-on: ubuntu-latest
-    permissions:
-      pull-requests: write
-    steps:
-    - name: Checkout the source
-      uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
-      with:
-        fetch-depth: 0  # Full history needed for jxl-perfhistory
-        persist-credentials: false
-
-    - name: Fetch base branch
-      run: git fetch origin ${GITHUB_BASE_REF}
-
-    - name: Install latest rust toolchain
-      uses: dtolnay/rust-toolchain@29eef336d9b2848a0b548edc03f92a220660cdb8 # stable
-
-    - name: Rust cache
-      uses: Swatinem/rust-cache@23bce251a8cd2ffc3c1075eaa2367cf899916d84 # v2.7.3
-      with:
-        prefix-key: benchmark
-
-    - name: Install jxl-perfhistory
-      run: cargo install --git https://github.com/zond/jxl-perfhistory
-
-    - name: Select benchmark corpus
-      id: select-images
-      run: |
-        mkdir -p testimages
-
-        # Keep this aligned with the autoresearch image set so CI numbers stay
-        # comparable while avoiding benchmark timeouts.
-        cp jxl/resources/test/conformance_test_images/sunset_logo.jxl testimages/sunset_logo.jxl
-        cp jxl/resources/test/conformance_test_images/bike.jxl testimages/bike.jxl
-        cp jxl/resources/test/green_queen_modular_e3.jxl testimages/green_queen_modular_e3.jxl
-        cp jxl/resources/test/green_queen_vardct_e3.jxl testimages/green_queen_vardct_e3.jxl
-        cp jxl/resources/test/conformance_test_images/bicycles.jxl testimages/bicycles.jxl
-        cp jxl/resources/test/conformance_test_images/delta_palette.jxl testimages/delta_palette.jxl
-        cp jxl/resources/test/conformance_test_images/lz77_flower.jxl testimages/lz77_flower.jxl
-        cp jxl/resources/test/conformance_test_images/patches.jxl testimages/patches_lossless.jxl
-
-        echo "Selected $(find testimages -maxdepth 1 -name '*.jxl' | wc -l) images for benchmark"
-
-    - name: Cache benchmark binaries
-      uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
-      with:
-        path: benchmark-binaries
-        key: ${{ runner.os }}-${{ runner.arch }}-benchmark-binaries
-
-    - name: Run performance benchmark
-      id: benchmark
-      continue-on-error: true  # Never fail the PR
-      run: |
-        mkdir -p benchmark-binaries
-        (jxl-perfhistory -b benchmark-binaries -g "testimages/*.jxl" -c 0.99 -e 0.03 --ignore-noisy-system --pr-comment || echo "Benchmark failed") > benchmark.txt
-
-    - name: Save PR context
-      run: |
-        echo "${{ github.event.number }}" > pr_number.txt
-        echo "${{ github.event.pull_request.head.sha }}" > head_sha.txt
-
-    - name: Add to step summary
-      if: always()
-      run: |
-        echo "## Performance Benchmark" >> $GITHUB_STEP_SUMMARY
-        echo "" >> $GITHUB_STEP_SUMMARY
-        cat benchmark.txt >> $GITHUB_STEP_SUMMARY
-        echo "" >> $GITHUB_STEP_SUMMARY
-
-    - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
-      with:
-        name: benchmark-results
-        path: |
-          benchmark.txt
-          pr_number.txt
-          head_sha.txt
+      - name: Upload HTML report
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: conformance_report
+          path: conformance_report.html

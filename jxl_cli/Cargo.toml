@@ -20,7 +20,7 @@ color-eyre = "0.6.5"
 
 [dev-dependencies]
 jxl_macros = { path = "../jxl_macros", features = ["test"], version = "=0.4.3" }
-criterion = { version = "0.7.0", features = ["html_reports"] }
+divan = { package = "codspeed-divan-compat", version = "5.0.1" }
 
 [build-dependencies]
 anyhow = "1.0.100"
@@ -42,5 +42,5 @@ simd128 = ["jxl/simd128"]
 workspace = true
 
 [[bench]]
-name = "decode"
+name = "codspeed"
 harness = false
